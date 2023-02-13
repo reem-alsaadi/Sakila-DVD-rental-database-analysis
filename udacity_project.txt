@@ -1,0 +1,58 @@
+/*Q1:Who are the top 10 customers per total sales?*/
+
+WITH SUB1 AS(SELECT *,first_name ||''|| last_name AS full_name FROM customer)
+SELECT full_name,sum(amount) as total_purchase
+FROM SUB1 s
+JOIN payment p
+ON p.customer_id=s.customer_id
+GROUP BY 1
+ORDER BY 2 DESC
+limit 10;
+---------------------------------------------------------------------------------------
+/*Q2: Who are the actors those acting more than 10 times?*/
+
+SELECT a.first_name , a.last_name, COUNT (f.film_id)
+FROM film_actor f
+JOIN actor a
+ON f.film_id = a.actor_id
+GROUP BY (first_name,last_name)
+HAVING COUNT(f.film_id)>10;
+----------------------------------------------------------------------------------------
+/*Q3: How many movies in each category devided by duration quartile?*/
+
+WITH SUBQUERY1 AS (
+  	SELECT f.title as film_title,
+	         c.name AS category_name,
+			     NTILE(4) OVER (ORDER BY f.rental_duration) AS standard_quartile
+		 FROM film f
+		 JOIN film_category as fc
+		ON f.film_id=fc.film_id
+		 JOIN category c
+		ON fc.category_id=c.category_id
+)
+  SELECT DISTINCT * 
+   FROM (
+   SELECT category_name,
+	        standard_quartile,
+	        COUNT(film_title) 
+	        OVER(PARTITION BY standard_quartile ORDER BY category_name)
+    FROM SUBQUERY1
+   WHERE category_name 
+      IN ('Animation', 'Children', 'Classics', 'Comedy', 'Family', 'Music')
+ORDER BY 1) sub;
+
+----------------------------------------------------------------------------------------------
+
+/* Q4:What is the number of rentals per month for each store?*/
+
+SELECT s.store_id,
+          EXTRACT(ISOYEAR FROM r.rental_date) AS rental_year,
+	        EXTRACT(MONTH FROM r.rental_date) AS rental_month,
+	        COUNT(r.rental_id) AS count_rentals
+     FROM rental r
+     JOIN staff 
+   ON r.staff_id=staff.staff_id
+     JOIN store s
+    ON staff.store_id=s.store_id
+ GROUP BY 1, 2, 3
+ ORDER BY 1, 2, 3;
